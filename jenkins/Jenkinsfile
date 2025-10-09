@@ -1,11 +1,19 @@
 pipeline {
     agent any
+
+    environment {
+        NEXUS_URL = "http://3.14.140.80/:8081"
+        NEXUS_CREDENTIAL_ID = "nexus-credentials"
+    }
+
     stages {
+
         stage('Build') {
             steps {
                 sh 'python3 -m py_compile sources/add2vals.py sources/calc.py'
             }
         }
+
         stage('Test') {
             steps {
                 sh '''
@@ -23,19 +31,41 @@ pipeline {
                 }
             }
         }
+
         stage('Deliver') {
             steps {
                 sh '''
                     . venv/bin/activate
                     pip install pyinstaller
                     pyinstaller --onefile sources/add2vals.py
+                    mv dist/add2vals dist/add2vals.tar.gz
                 '''
             }
             post {
                 success {
-                    archiveArtifacts 'dist/add2vals'
+                    archiveArtifacts 'dist/add2vals.tar.gz'
                 }
             }
         }
+
+        stage('Upload to Nexus') {
+            when {
+                expression { fileExists('dist/add2vals.tar.gz') }
+            }
+            environment {
+                NEXUS_USER = 'admin'
+                NEXUS_PASS = 'vnxqsBCt:HWMR3_'   
+                NEXUS_REPO = 'PythonArtifacts' 
+            }
+            steps {
+                sh '''
+                    echo "Uploading artifact to Nexus..."
+                    curl -v -u ${NEXUS_USER}:${NEXUS_PASS} \
+                      --upload-file dist/add2vals.tar.gz \
+                      ${NEXUS_URL}/repository/${NEXUS_REPO}/add2vals.tar.gz
+                '''
+            }
+        }
+
     }
 }

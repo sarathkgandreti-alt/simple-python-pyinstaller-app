@@ -4,6 +4,7 @@ pipeline {
     environment {
         NEXUS_URL = "http://3.14.140.80:8081"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
+        SONARQUBE_URL = "http://3.14.140.80:9000"
     }
 
     stages {
@@ -47,6 +48,24 @@ pipeline {
                 }
             }
         }
+
+         stage('SonarQube Analysis') {
+            steps {
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                sh '''
+                    echo "Running SonarQube analysis..."
+                    sonar-scanner \
+                    -Dsonar.projectKey=simple-python-pyinstaller-app \
+                    -Dsonar.projectName="Simple Python Pyinstaller App" \
+                    -Dsonar.sources=./sources \
+                    -Dsonar.host.url=${SONARQUBE_URL} \
+                    -Dsonar.login=${SONAR_TOKEN}
+                '''
+                }
+            }
+               
+        }
+    
 
         stage('Upload to Nexus') {
             when {

@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_URL = "http://3.14.140.80/:8081"
+        NEXUS_URL = "http://3.14.140.80:8081"
         NEXUS_CREDENTIAL_ID = "nexus-credentials"
     }
 
